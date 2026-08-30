@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const API_BASE_URL = import.meta.env.API_URL || "http://localhost:4000/api";
 
 /**
  * Thrown when the API responds with a non-2xx status. Carries the HTTP
