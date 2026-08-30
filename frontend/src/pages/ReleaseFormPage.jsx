@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import Layout from "../components/Layout";
 import ChecklistSteps from "../components/ChecklistSteps";
 import NotesField from "../components/NotesField";
@@ -28,19 +29,30 @@ export default function ReleaseFormPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // Snapshot of the loaded field values, used to detect unsaved edits
+  // (step toggles are excluded - those save immediately on click, not on Save).
+  const [initialName, setInitialName] = useState("");
+  const [initialReleaseDate, setInitialReleaseDate] = useState("");
+  const [initialAdditionalInfo, setInitialAdditionalInfo] = useState("");
 
   useEffect(() => {
     if (isNew) return;
     getRelease(id)
       .then((release) => {
+        const loadedReleaseDate = toDateTimeLocalValue(release.releaseDate);
         setName(release.name);
-        setReleaseDate(toDateTimeLocalValue(release.releaseDate));
+        setReleaseDate(loadedReleaseDate);
         setAdditionalInfo(release.additionalInfo || "");
         setSteps(release.steps);
+        setInitialName(release.name);
+        setInitialReleaseDate(loadedReleaseDate);
+        setInitialAdditionalInfo(release.additionalInfo || "");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id, isNew]);
+
+  const isDirty = name !== initialName || releaseDate !== initialReleaseDate || additionalInfo !== initialAdditionalInfo;
 
   /**
    * Toggle a checklist step, optimistically updating the UI and rolling
@@ -71,8 +83,9 @@ export default function ReleaseFormPage() {
         const created = await createRelease({ name, releaseDate, additionalInfo });
         navigate(`/releases/${created.id}`);
       } else {
-        const updated = await updateAdditionalInfo(id, additionalInfo);
-        setAdditionalInfo(updated.additionalInfo || "");
+        await updateAdditionalInfo(id, additionalInfo);
+        toast.success(`"${name}" saved.`);
+        navigate("/");
       }
     } catch (err) {
       setError(err.message);
@@ -137,6 +150,11 @@ export default function ReleaseFormPage() {
       <NotesField value={additionalInfo} onChange={setAdditionalInfo} />
 
       <div className="form-footer">
+        {!isDirty && (
+          <Link className="btn-secondary" to="/">
+            Back to home
+          </Link>
+        )}
         <button className="btn-primary" onClick={handleSave} disabled={saving || (isNew && (!name || !releaseDate))}>
           Save <CheckIcon />
         </button>

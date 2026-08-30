@@ -252,6 +252,7 @@ body {
 .form-footer {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .error-banner {
